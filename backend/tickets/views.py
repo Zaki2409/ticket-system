@@ -7,6 +7,9 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import Ticket
 from .serializers import TicketSerializer
+import openai
+from django.conf import settings
+
 
 class TicketListCreate(generics.ListCreateAPIView):
     queryset = Ticket.objects.all().order_by('-created_at')
@@ -38,26 +41,73 @@ class TicketDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Ticket.objects.all()
     serializer_class = TicketSerializer
 
+# @api_view(['POST'])
+# def classify_ticket(request):
+#     # Temporary mock response - LLM integration later
+#     description = request.data.get('description', '')
+    
+#     # Mock logic - replace with LLM later
+#     if 'bill' in description.lower():
+#         suggested_category = 'billing'
+#         suggested_priority = 'high'
+#     elif 'login' in description.lower():
+#         suggested_category = 'account'
+#         suggested_priority = 'medium'
+#     else:
+#         suggested_category = 'general'
+#         suggested_priority = 'low'
+    
+#     return Response({
+#         'suggested_category': suggested_category,
+#         'suggested_priority': suggested_priority
+#     })
+
 @api_view(['POST'])
 def classify_ticket(request):
-    # Temporary mock response - LLM integration later
     description = request.data.get('description', '')
     
-    # Mock logic - replace with LLM later
-    if 'bill' in description.lower():
-        suggested_category = 'billing'
-        suggested_priority = 'high'
-    elif 'login' in description.lower():
-        suggested_category = 'account'
-        suggested_priority = 'medium'
-    else:
-        suggested_category = 'general'
-        suggested_priority = 'low'
+    if not description:
+        return Response({
+            'suggested_category': '',
+            'suggested_priority': ''
+        })
     
-    return Response({
-        'suggested_category': suggested_category,
-        'suggested_priority': suggested_priority
-    })
+    try:
+        openai.api_key = settings.OPENAI_API_KEY
+        
+        prompt = f"""
+        Given this support ticket description, classify it into:
+        - Category: billing, technical, account, or general
+        - Priority: low, medium, high, or critical
+        
+        Description: "{description}"
+        
+        Return ONLY JSON format: {{"category": "...", "priority": "..."}}
+        """
+        
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You classify support tickets. Return only JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=50
+        )
+        
+        result = eval(response.choices[0].message.content)  # Simple parse
+        
+        return Response({
+            'suggested_category': result.get('category', 'general'),
+            'suggested_priority': result.get('priority', 'low')
+        })
+        
+    except Exception as e:
+        # Fail gracefully - return empty suggestions
+        return Response({
+            'suggested_category': '',
+            'suggested_priority': ''
+        })
 
 @api_view(['GET'])
 def ticket_stats(request):
