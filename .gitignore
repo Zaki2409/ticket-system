@@ -9,7 +9,5 @@ node_modules/
 db.sqlite3
 staticfiles/
 media/
-frontend/build/
-frontend/dist/
 .vscode/
 .idea/
