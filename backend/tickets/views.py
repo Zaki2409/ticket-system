@@ -73,7 +73,7 @@ def classify_ticket(request):
         })
     
     try:
-        openai.api_key = settings.OPENAI_API_KEY
+        client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
         
         prompt = f"""
         Given this support ticket description, classify it into:
@@ -85,7 +85,7 @@ def classify_ticket(request):
         Return ONLY JSON format: {{"category": "...", "priority": "..."}}
         """
         
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You classify support tickets. Return only JSON."},
@@ -95,7 +95,12 @@ def classify_ticket(request):
             max_tokens=50
         )
         
-        result = eval(response.choices[0].message.content)  # Simple parse
+        # Parse the response
+        import json
+        result_text = response.choices[0].message.content
+        # Clean up the response (remove markdown code blocks if present)
+        result_text = result_text.replace('```json', '').replace('```', '').strip()
+        result = json.loads(result_text)
         
         return Response({
             'suggested_category': result.get('category', 'general'),
@@ -103,8 +108,7 @@ def classify_ticket(request):
         })
         
     except Exception as e:
-        print(f"LLM ERROR: {str(e)}")  # This will show in backend terminal
-        # Fail gracefully - return empty suggestions
+        print(f"LLM ERROR: {str(e)}")
         return Response({
             'suggested_category': '',
             'suggested_priority': ''
