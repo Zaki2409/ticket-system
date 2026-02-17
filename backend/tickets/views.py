@@ -103,6 +103,7 @@ def classify_ticket(request):
         })
         
     except Exception as e:
+        print(f"LLM ERROR: {str(e)}")  # This will show in backend terminal
         # Fail gracefully - return empty suggestions
         return Response({
             'suggested_category': '',
