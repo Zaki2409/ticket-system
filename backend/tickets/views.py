@@ -124,13 +124,17 @@ def ticket_stats(request):
     tickets_last_week = Ticket.objects.filter(created_at__gte=week_ago).count()
     avg_per_day = round(tickets_last_week / 7, 1)
     
-    # Priority breakdown
-    priority_stats = Ticket.objects.values('user_priority').annotate(count=Count('id'))
-    priority_breakdown = {item['user_priority']: item['count'] for item in priority_stats}
     
-    # Category breakdown
+    priority_choices = ['low', 'medium', 'high', 'critical']
+    priority_stats = Ticket.objects.values('user_priority').annotate(count=Count('id'))
+    priority_dict = {item['user_priority']: item['count'] for item in priority_stats}
+    priority_breakdown = {priority: priority_dict.get(priority, 0) for priority in priority_choices}
+
+    
+    category_choices = ['billing', 'technical', 'account', 'general']
     category_stats = Ticket.objects.values('user_category').annotate(count=Count('id'))
-    category_breakdown = {item['user_category']: item['count'] for item in category_stats}
+    category_dict = {item['user_category']: item['count'] for item in category_stats}
+    category_breakdown = {category: category_dict.get(category, 0) for category in category_choices}
     
     return Response({
         'total_tickets': total,
