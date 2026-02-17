@@ -1,0 +1,40 @@
+# Support Ticket System
+
+A full-stack ticket management system with AI-powered categorization.
+
+## Built
+
+- **Backend**: Django + DRF + PostgreSQL
+- **Frontend**: React
+- **LLM**: OpenAI GPT-3.5 for auto-suggesting category/priority
+- **Docker**: Full containerization
+
+## Features
+
+✅ Submit tickets with AI suggestions (category/priority auto-filled based on description)
+✅ Override AI suggestions manually before submitting
+✅ View all tickets with filters (category, priority, status) and search
+✅ Update ticket status inline
+✅ Stats dashboard with real-time metrics
+✅ Fully containerized - runs with one command
+
+## API Endpoints
+
+- `POST /api/tickets/` - Create ticket
+- `GET /api/tickets/` - List tickets (filters: ?category=&priority=&status=&search=)
+- `PATCH /api/tickets/<id>/` - Update ticket
+- `GET /api/tickets/stats/` - Aggregated metrics
+- `POST /api/tickets/classify/` - LLM suggestion endpoint
+
+## LLM Integration
+
+- **Model**: OpenAI GPT-3.5-turbo
+- **Prompt**: f"""
+        Given this support ticket description, classify it into:
+        - Category: billing, technical, account, or general
+        - Priority: low, medium, high, or critical
+
+        Description: "{description}"
+
+        Return ONLY JSON format: {{"category": "...", "priority": "..."}}
+        """
